@@ -1,6 +1,5 @@
 /*
 Skrypt inicjalizujący bazę danych: System Car-Sharingowy
-Baza zaprojektowana do zaawansowanej analizy wykorzystania floty, zachowań użytkowników oraz rentowności.
 Silnik: PostgreSQL
 */
 
