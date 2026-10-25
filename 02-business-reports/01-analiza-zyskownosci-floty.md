@@ -26,4 +26,5 @@ ORDER BY amount_per_distance DESC;
 *   **Optymalizacja pod kątem biznesu:** Zastosowano konkatenację (`||`), łącząc markę i model w jedną kolumnę `vehicle` dla łatwiejszej interpretacji raportu.
 
 **Wynik działania skryptu (Output):**
+
 ![Wynik zyskowności floty](output-01.png)
