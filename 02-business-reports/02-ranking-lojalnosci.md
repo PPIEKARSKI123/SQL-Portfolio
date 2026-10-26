@@ -5,25 +5,24 @@ Dział marketingu chce uruchomić program lojalnościowy i nagrodzić klientów,
 
 **Zapytanie SQL:**
 ```sql
-SELECT 
-    v.brand || ' ' || v.model AS vehicle, 
-    v.category,
-    SUM(p.amount) AS total_amount,
-    SUM(r.distance_km) AS total_distance,
-    ROUND(SUM(p.amount) / NULLIF(SUM(r.distance_km), 0), 2) AS amount_per_distance
-FROM vehicles v
-INNER JOIN rentals r ON v.vehicle_id = r.vehicle_id
-INNER JOIN payments p ON p.rental_id = r.rental_id
-WHERE p.payment_status = 'PAID'
-    AND r.status = 'COMPLETED'
-GROUP BY v.category, vehicle
-ORDER BY amount_per_distance DESC;
+SELECT
+    DENSE_RANK() OVER (ORDER BY COUNT(r.rental_id) DESC) AS loyalty_rank,
+    u.user_id,
+    u.first_name || ' ' || u.last_name AS full_name,
+    COUNT(r.rental_id) AS weekend_rentals
+FROM users u
+INNER JOIN rentals r ON u.user_id = r.user_id
+WHERE r.status = 'COMPLETED'
+    AND EXTRACT(ISODOW FROM r.start_time) IN (6, 7)
+GROUP BY u.user_id
+ORDER BY loyalty_rank ASC;
 ```
 
 **Kluczowe decyzje analityczne:**
-*   **Zabezpieczenie przed Division by Zero:** Zastosowano funkcję `NULLIF(SUM(r.distance_km), 0)`. W przypadku awarii modułu GPS sprzętu (dystans = 0), skrypt nie wywoła błędu krytycznego silnika, lecz zwróci wartość NULL.
-*   **Filtrowanie statusów transakcyjnych:** Ograniczono zbiór wyłącznie do przejazdów fizycznie zrealizowanych (`COMPLETED`) i skutecznie opłaconych (`PAID`), odrzucając szum informacyjny z porzuconych rezerwacji.
-*   **Optymalizacja pod kątem biznesu:** Zastosowano konkatenację (`||`), łącząc markę i model w jedną kolumnę `vehicle` dla łatwiejszej interpretacji raportu.
+*   **Obsługa remisów za pomocą `DENSE_RANK()`:** Wykorzystano funkcję okna `DENSE_RANK()` zamiast `ROW_NUMBER()` lub `RANK()`, aby sprawiedliwie obsłużyć sytuacje ex aequo. Użytkownicy o identycznej liczbie przejazdów otrzymują tę samą pozycję na podium, a kolejny numer miejsca nie jest pomijany (1, 1, 2 zamiast 1, 1, 3), co jest kluczowe w większości programów lojalnościowych.
+*   **Standaryzacja dni tygodnia (ISO 8601):** Zastosowano `EXTRACT(ISODOW FROM ...)` zamiast standardowego `DOW`. Standard ISO jednoznacznie przypisuje wartości 6 (sobota) i 7 (niedziela), eliminując ryzyko błędnego filtrowania wynikającego z lokalnych ustawień regionalnych serwera bazy danych.
+*   **Zależność funkcjonalna przy grupowaniu:** Grupowanie ograniczono wyłącznie do klucza głównego `u.user_id`. Wykorzystano mechanizm PostgreSQL, który rozpoznaje unikalność klucza i nie wymaga dublowania kolumn `first_name` oraz `last_name` w klauzuli `GROUP BY`, jednocześnie zabezpieczając raport przed scalaniem danych różnych osób o tym samym imieniu i nazwisku.
+*   **Układ pod kątem odbioru biznesowego:** Kolumnę `loyalty_rank` umieszczono na początku zestawienia, a wyniki posortowano rosnąco (`ASC`), dzięki czemu raport naturalnie eksponuje liderów zestawienia od pierwszego miejsca.
 
 **Wynik działania skryptu (Output):**
 
