@@ -29,4 +29,5 @@ ORDER BY c.total_cancelled DESC;
 *   **Zliczanie po kluczu głównym:** Do wyliczenia anulacji wykorzystano `COUNT(rental_id)` zamiast zliczania wierszy. Odwołanie się bezpośrednio do klucza głównego gwarantuje brak wartości `NULL` i zapewnia precyzję matematyczną raportu.
 
 **Wynik działania skryptu (Output):**
+
 ![Lista anulacji](output-03.png)
